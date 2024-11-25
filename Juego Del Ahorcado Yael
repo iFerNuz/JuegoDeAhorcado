@@ -1,0 +1,207 @@
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk
+import random
+
+# Diccionario con usuarios y contraseñas
+USUARIOS = {
+    "yaelmg23": "123456789",
+    "usuario1": "contraseña1",
+    "usuario2": "contraseña2"
+}
+
+# Palabras para el juego
+PALABRAS = ["python", "ahorcado", "programacion", "juego", "ventana"]
+
+# Inicializar variables 
+intentos_restantes = 6
+letras_adivinadas = []
+palabra_secreta = random.choice(PALABRAS)
+
+# Ruta de mi imagen de fondo
+ruta_imagen = r"C:\Users\yaelm\Downloads\Fondo5.jpg"
+
+# Función para verificar los datos
+def verificar_credenciales():
+    global intentos_restantes
+    usuario, contraseña = entrada_usuario.get(), entrada_contraseña.get()
+
+    if usuario in USUARIOS and USUARIOS[usuario] == contraseña:
+        messagebox.showinfo("Acceso permitido", "¡Bienvenido! Accediendo al juego...")
+        ventana_login.destroy()
+        mostrar_reglas()  # Redirige a la nueva ventana con las reglas
+    else:
+        messagebox.showerror("Acceso denegado", "Usuario incorrecto.")
+
+# Función para mostrar las reglas y los nombres
+def mostrar_reglas():
+    # Crear nueva ventana
+    ventana_reglas = tk.Tk()
+    ventana_reglas.title("Reglas del Juego")
+    ventana_reglas.geometry("500x400")
+
+    # Estilo de fuentes
+    fuente_titulo = ("Arial", 18, "bold")
+    fuente_texto = ("Arial", 12)
+
+    # Título
+    titulo = tk.Label(ventana_reglas, text="Reglas del Juego", font=fuente_titulo, fg="blue")
+    titulo.pack(pady=20)
+
+    # Mostrar nombre
+    nombre = tk.Label(ventana_reglas, text="Desarrollado por: Moreno Granados Angel Yael", font=fuente_texto)
+    nombre.pack(pady=10)
+
+    # Reglas del juego
+    reglas = tk.Label(ventana_reglas, text="1. Adivina la palabra.\n2. Tienes 6 intentos.\n3. Cada intento te acerca al ahorcado.", font=fuente_texto, justify="left")
+    reglas.pack(pady=10)
+
+    # Botón para cerrar las reglas y comenzar el juego
+    boton_comenzar = tk.Button(ventana_reglas, text="Comenzar Juego", font=fuente_texto, command=lambda: [ventana_reglas.destroy(), iniciar_juego()])
+    boton_comenzar.pack(pady=20)
+
+    ventana_reglas.mainloop()
+
+# Función para iniciar el juego del ahorcado
+def iniciar_juego():
+    global intentos_restantes, letras_adivinadas, palabra_secreta
+    intentos_restantes = 6
+    letras_adivinadas = []
+    palabra_secreta = random.choice(PALABRAS)
+
+    # Crear ventana del juego
+    ventana_juego = tk.Tk()
+    ventana_juego.title("Juego del Ahorcado")
+    ventana_juego.geometry("400x500")
+
+    # Canvas para el dibujo del ahorcado
+    canvas = tk.Canvas(ventana_juego, width=300, height=200, bg="white")
+    canvas.pack(pady=20)
+
+    # Función para dibujar el muñeco paso a paso
+    def dibujar_ahorcado():
+        if intentos_restantes == 5:
+            canvas.create_line(50, 200, 150, 200, width=3)  # Base
+        elif intentos_restantes == 4:
+            canvas.create_line(100, 200, 100, 50, width=3)  # Poste vertical
+        elif intentos_restantes == 3:
+            canvas.create_line(100, 50, 150, 50, width=3)   # Poste horizontal
+        elif intentos_restantes == 2:
+            canvas.create_line(150, 50, 150, 80, width=3)   # Cuerda
+        elif intentos_restantes == 1:
+            canvas.create_oval(135, 80, 165, 110, width=3)  # Cabeza
+        elif intentos_restantes == 0:
+            # Cuerpo y extremidades
+            canvas.create_line(150, 110, 150, 160, width=3)  # Cuerpo
+            canvas.create_line(150, 120, 140, 140, width=3)  # Brazo izquierdo
+            canvas.create_line(150, 120, 160, 140, width=3)  # Brazo derecho
+            canvas.create_line(150, 160, 140, 180, width=3)  # Pierna izquierda
+            canvas.create_line(150, 160, 160, 180, width=3)  # Pierna derecha
+
+    # Función para comprobar la letra ingresada
+    def comprobar_letra():
+        global intentos_restantes
+        letra = entrada_letra.get().lower()
+        entrada_letra.delete(0, tk.END)
+
+        if len(letra) != 1 or not letra.isalpha():
+            mensaje.set("Por favor ingresa una letra válida.")
+            return
+
+        if letra in letras_adivinadas:
+            mensaje.set(f"Ya ingresaste la letra '{letra}'.")
+            return
+
+        letras_adivinadas.append(letra)
+
+        if letra in palabra_secreta:
+            mensaje.set(f"¡Bien hecho! La letra '{letra}' está en la palabra.")
+        else:
+            intentos_restantes -= 1
+            mensaje.set(f"Fallaste. Te quedan {intentos_restantes} intentos.")
+            dibujar_ahorcado()
+
+        actualizar_palabra_mostrada()
+
+        # Verificar si el juego ha terminado
+        if intentos_restantes == 0:
+            mensaje.set(f"Perdiste. La palabra era '{palabra_secreta}'.")
+            boton_comprobar.config(state=tk.DISABLED)
+        elif "_" not in palabra_mostrada.get():
+            mensaje.set("¡Felicidades! Adivinaste la palabra.")
+            boton_comprobar.config(state=tk.DISABLED)
+
+    # Función para actualizar la palabra mostrada
+    def actualizar_palabra_mostrada():
+        estado = " ".join([letra if letra in letras_adivinadas else "_" for letra in palabra_secreta])
+        palabra_mostrada.set(estado)
+
+    # Variable para la palabra mostrada
+    palabra_mostrada = tk.StringVar()
+    actualizar_palabra_mostrada()
+
+    # Mostrar la palabra
+    etiqueta_palabra = tk.Label(ventana_juego, textvariable=palabra_mostrada, font=("Arial", 18))
+    etiqueta_palabra.pack(pady=10)
+
+    # Entrada para ingresar letras
+    entrada_letra = tk.Entry(ventana_juego, font=("Arial", 14), justify="center")
+    entrada_letra.pack(pady=10)
+
+    # Botón para comprobar letras
+    boton_comprobar = tk.Button(ventana_juego, text="Comprobar letra", font=("Arial", 14), command=comprobar_letra)
+    boton_comprobar.pack(pady=10)
+
+    # Etiqueta para mensajes
+    mensaje = tk.StringVar()
+    etiqueta_mensaje = tk.Label(ventana_juego, textvariable=mensaje, font=("Arial", 12), fg="blue")
+    etiqueta_mensaje.pack(pady=10)
+
+    # Iniciar la ventana del juego
+    ventana_juego.mainloop()
+
+# Ventana de login
+ventana_login = tk.Tk()
+ventana_login.title("Login - Ahorcado")
+
+# Cargar la imagen de fondo
+imagen_fondo = Image.open(r"C:\Users\yaelm\Downloads\Fondo5.jpg")
+fondo_tk = ImageTk.PhotoImage(imagen_fondo)
+
+# Ajustar el tamaño de la ventana a la imagen de fondo
+ventana_login.geometry(f"{imagen_fondo.width}x{imagen_fondo.height}")
+
+# Crear un Label con la imagen de fondo y colocarlo en la ventana
+label_fondo = tk.Label(ventana_login, image=fondo_tk)
+label_fondo.place(x=0, y=0, relwidth=1, relheight=1)
+
+# Crear un marco para los widgets del login
+frame_login = tk.Frame(ventana_login, bg=None, bd=5, relief="ridge")
+frame_login.place(relx=0.5, rely=0.5, anchor="center", width=400, height=500)
+
+# Título del login
+fuente_titulo = ("Arial", 18, "bold")
+titulo = tk.Label(frame_login, text="¡La Última Partida!", font=fuente_titulo, fg="red")
+titulo.pack(pady=20)
+
+# Estilo de fuente
+fuente_texto = ("Arial", 12)
+
+# Entrada de usuario
+label_usuario = tk.Label(frame_login, text="Usuario", font=fuente_texto, bg=None)
+label_usuario.pack(pady=5)
+entrada_usuario = tk.Entry(frame_login, font=fuente_texto)
+entrada_usuario.pack(pady=5)
+
+# Entrada de contraseña
+label_contraseña = tk.Label(frame_login, text="Contraseña", font=fuente_texto, bg=None)
+label_contraseña.pack(pady=5)
+entrada_contraseña = tk.Entry(frame_login, font=fuente_texto, show="*")
+entrada_contraseña.pack(pady=5)
+
+# Botón de login
+boton_login = tk.Button(frame_login, text="Ingresar", font=fuente_texto, command=verificar_credenciales)
+boton_login.pack(pady=20)
+
+# Iniciar ventana de login
+ventana_login.mainloop()
